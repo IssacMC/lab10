@@ -1,0 +1,546 @@
+
+
+
+ARM Macro Assembler    Page 1 
+
+
+    1 00000000         ; Print.s
+    2 00000000         ; Student names: change this to your names or look very 
+                       silly
+    3 00000000         ; Last modification date: change this to the last modifi
+                       cation date or look very silly
+    4 00000000         ; Runs on LM4F120 or TM4C123
+    5 00000000         ; EE319K lab 7 device driver for any LCD
+    6 00000000         ;
+    7 00000000         ; As part of Lab 7, students need to implement these LCD
+                       _OutDec and LCD_OutFix
+    8 00000000         ; This driver assumes two low-level LCD functions
+    9 00000000         ; ST7735_OutChar   outputs a single 8-bit ASCII characte
+                       r
+   10 00000000         ; ST7735_OutString outputs a null-terminated string 
+   11 00000000         
+   12 00000000                 IMPORT           ST7735_OutChar
+   13 00000000                 IMPORT           ST7735_OutString
+   14 00000000                 EXPORT           LCD_OutDec
+   15 00000000                 EXPORT           LCD_OutFix
+   16 00000000         
+   17 00000000                 AREA             |.text|, CODE, READONLY, ALIGN=
+2
+   18 00000000                 THUMB
+   19 00000000         
+   20 00000000         
+   21 00000000         
+   22 00000000         ;-----------------------LCD_OutDec----------------------
+                       -
+   23 00000000         ; Output a 32-bit number in unsigned decimal format
+   24 00000000         ; Input: R0 (call by value) 32-bit unsigned number
+   25 00000000         ; Output: none
+   26 00000000         ; Invariables: This function must not permanently modify
+                        registers R4 to R11
+   27 00000000         ; Lab 7 requirement is for at least one local variable o
+                       n the stack with symbolic binding
+   28 00000000         LCD_OutDec
+   29 00000000         BaseCase
+   30 00000000 280A            CMP              R0, #10     ;
+   31 00000002 D207            BHS              NonBaseCase
+   32 00000004 F100 0030       ADD              R0, #0x30
+   33 00000008 B510            PUSH             {R4, LR}
+   34 0000000A F7FF FFFE       BL               ST7735_OutChar
+   35 0000000E E8BD 4010       POP              {R4, LR}
+   36 00000012 4770            BX               LR
+   37 00000014         NonBaseCase
+   38 00000014 2864            CMP              R0, #100
+   39 00000016 D212            BHS              TRIPLE
+   40 00000018 F04F 030A       MOV              R3, #10
+   41 0000001C 4602            MOV              R2, R0      ;R2 has the origina
+                                                            l value
+   42 0000001E FBB0 F1F3       UDIV             R1, R0, R3  ;this is n = n/10, 
+                                                            R1 should contain t
+                                                            he most significant
+                                                             bit
+   43 00000022 4608            MOV              R0, R1
+   44 00000024 F100 0030       ADD              R0, #0x30
+   45 00000028 B50E            PUSH             {R1, R2,R3, LR}
+   46 0000002A F7FF FFFE       BL               ST7735_OutChar
+   47 0000002E E8BD 400E       POP              {R1, R2, R3, LR}
+
+
+
+ARM Macro Assembler    Page 2 
+
+
+   48 00000032 FB01 F303       MUL              R3, R1, R3  ; 
+   49 00000036 EBA2 0103       SUB              R1, R2, R3
+   50 0000003A 4608            MOV              R0, R1      ;remainder of the a
+                                                            bove operation
+   51 0000003C E7E0            B                BaseCase
+   52 0000003E         TRIPLE
+   53 0000003E F5B0 7F7A       CMP              R0, #1000
+   54 00000042 D212            BHS              QUAD
+   55 00000044 F04F 0364       MOV              R3, #100
+   56 00000048 4602            MOV              R2, R0      ;R2 has the origina
+                                                            l value
+   57 0000004A FBB0 F1F3       UDIV             R1, R0, R3  ;this is n = n/100,
+                                                             R1 should contain 
+                                                            the most significan
+                                                            t bit
+   58 0000004E 4608            MOV              R0, R1
+   59 00000050 F100 0030       ADD              R0, #0x30
+   60 00000054 B50E            PUSH             {R1, R2,R3, LR}
+   61 00000056 F7FF FFFE       BL               ST7735_OutChar
+   62 0000005A E8BD 400E       POP              {R1, R2, R3, LR}
+   63 0000005E FB01 F303       MUL              R3, R1, R3  ; 
+   64 00000062 EBA2 0103       SUB              R1, R2, R3
+   65 00000066 4608            MOV              R0, R1      ;remainder of the a
+                                                            bove operation
+   66 00000068 E7D4            B                NonBaseCase
+   67 0000006A         QUAD
+   68 0000006A F242 7310       LDR              R3, =10000
+   69 0000006E 4298            CMP              R0, R3
+   70 00000070 D212            BHS              FIVE
+   71 00000072 F44F 737A       MOV              R3, #1000
+   72 00000076 4602            MOV              R2, R0      ;R2 has the origina
+                                                            l value
+   73 00000078 FBB0 F1F3       UDIV             R1, R0, R3  ;this is n = n/100,
+                                                             R1 should contain 
+                                                            the most significan
+                                                            t bit
+   74 0000007C 4608            MOV              R0, R1
+   75 0000007E F100 0030       ADD              R0, #0x30
+   76 00000082 B50E            PUSH             {R1, R2,R3, LR}
+   77 00000084 F7FF FFFE       BL               ST7735_OutChar
+   78 00000088 E8BD 400E       POP              {R1, R2, R3, LR}
+   79 0000008C FB01 F303       MUL              R3, R1, R3  ; 
+   80 00000090 EBA2 0103       SUB              R1, R2, R3
+   81 00000094 4608            MOV              R0, R1      ;remainder of the a
+                                                            bove operation
+   82 00000096 E7D2            B                TRIPLE
+   83 00000098         
+   84 00000098         FIVE
+   85 00000098 4B65            LDR              R3, =100000
+   86 0000009A 4298            CMP              R0, R3
+   87 0000009C D212            BHS              SIX
+   88 0000009E F242 7310       MOV              R3, #10000
+   89 000000A2 4602            MOV              R2, R0      ;R2 has the origina
+                                                            l value
+   90 000000A4 FBB0 F1F3       UDIV             R1, R0, R3  ;this is n = n/100,
+                                                             R1 should contain 
+                                                            the most significan
+                                                            t bit
+   91 000000A8 4608            MOV              R0, R1
+
+
+
+ARM Macro Assembler    Page 3 
+
+
+   92 000000AA F100 0030       ADD              R0, #0x30
+   93 000000AE B50E            PUSH             {R1, R2,R3, LR}
+   94 000000B0 F7FF FFFE       BL               ST7735_OutChar
+   95 000000B4 E8BD 400E       POP              {R1, R2, R3, LR}
+   96 000000B8 FB01 F303       MUL              R3, R1, R3  ; 
+   97 000000BC EBA2 0103       SUB              R1, R2, R3
+   98 000000C0 4608            MOV              R0, R1      ;remainder of the a
+                                                            bove operation
+   99 000000C2 E7D2            B                QUAD
+  100 000000C4         
+  101 000000C4         SIX
+  102 000000C4 4B5B            LDR              R3, =1000000
+  103 000000C6 4298            CMP              R0, R3
+  104 000000C8 D211            BHS              SEVEN
+  105 000000CA 4B59            LDR              R3, =100000
+  106 000000CC 4602            MOV              R2, R0      ;R2 has the origina
+                                                            l value
+  107 000000CE FBB0 F1F3       UDIV             R1, R0, R3  ;this is n = n/100,
+                                                             R1 should contain 
+                                                            the most significan
+                                                            t bit
+  108 000000D2 4608            MOV              R0, R1
+  109 000000D4 F100 0030       ADD              R0, #0x30
+  110 000000D8 B50E            PUSH             {R1, R2,R3, LR}
+  111 000000DA F7FF FFFE       BL               ST7735_OutChar
+  112 000000DE E8BD 400E       POP              {R1, R2, R3, LR}
+  113 000000E2 FB01 F303       MUL              R3, R1, R3  ; 
+  114 000000E6 EBA2 0103       SUB              R1, R2, R3
+  115 000000EA 4608            MOV              R0, R1      ;remainder of the a
+                                                            bove operation
+  116 000000EC E7D4            B                FIVE
+  117 000000EE         
+  118 000000EE         SEVEN
+  119 000000EE 4B52            LDR              R3, =10000000
+  120 000000F0 4298            CMP              R0, R3
+  121 000000F2 D211            BHS              EIGHT
+  122 000000F4 4B4F            LDR              R3, =1000000
+  123 000000F6 4602            MOV              R2, R0      ;R2 has the origina
+                                                            l value
+  124 000000F8 FBB0 F1F3       UDIV             R1, R0, R3  ;this is n = n/100,
+                                                             R1 should contain 
+                                                            the most significan
+                                                            t bit
+  125 000000FC 4608            MOV              R0, R1
+  126 000000FE F100 0030       ADD              R0, #0x30
+  127 00000102 B50E            PUSH             {R1, R2,R3, LR}
+  128 00000104 F7FF FFFE       BL               ST7735_OutChar
+  129 00000108 E8BD 400E       POP              {R1, R2, R3, LR}
+  130 0000010C FB01 F303       MUL              R3, R1, R3  ; 
+  131 00000110 EBA2 0103       SUB              R1, R2, R3
+  132 00000114 4608            MOV              R0, R1      ;remainder of the a
+                                                            bove operation
+  133 00000116 E7D5            B                SIX
+  134 00000118         EIGHT
+  135 00000118 4B48            LDR              R3, =100000000
+  136 0000011A 4298            CMP              R0, R3
+  137 0000011C D211            BHS              NINE
+  138 0000011E 4B46            LDR              R3, =10000000
+  139 00000120 4602            MOV              R2, R0      ;R2 has the origina
+
+
+
+ARM Macro Assembler    Page 4 
+
+
+                                                            l value
+  140 00000122 FBB0 F1F3       UDIV             R1, R0, R3  ;this is n = n/100,
+                                                             R1 should contain 
+                                                            the most significan
+                                                            t bit
+  141 00000126 4608            MOV              R0, R1
+  142 00000128 F100 0030       ADD              R0, #0x30
+  143 0000012C B50E            PUSH             {R1, R2,R3, LR}
+  144 0000012E F7FF FFFE       BL               ST7735_OutChar
+  145 00000132 E8BD 400E       POP              {R1, R2, R3, LR}
+  146 00000136 FB01 F303       MUL              R3, R1, R3  ; 
+  147 0000013A EBA2 0103       SUB              R1, R2, R3
+  148 0000013E 4608            MOV              R0, R1      ;remainder of the a
+                                                            bove operation
+  149 00000140 E7D5            B                SEVEN
+  150 00000142         
+  151 00000142         NINE
+  152 00000142 4B3F            LDR              R3, =1000000000
+  153 00000144 4298            CMP              R0, R3
+  154 00000146 D211            BHS              TEN
+  155 00000148 4B3C            LDR              R3, =100000000
+  156 0000014A 4602            MOV              R2, R0      ;R2 has the origina
+                                                            l value
+  157 0000014C FBB0 F1F3       UDIV             R1, R0, R3  ;this is n = n/100,
+                                                             R1 should contain 
+                                                            the most significan
+                                                            t bit
+  158 00000150 4608            MOV              R0, R1
+  159 00000152 F100 0030       ADD              R0, #0x30
+  160 00000156 B50E            PUSH             {R1, R2,R3, LR}
+  161 00000158 F7FF FFFE       BL               ST7735_OutChar
+  162 0000015C E8BD 400E       POP              {R1, R2, R3, LR}
+  163 00000160 FB01 F303       MUL              R3, R1, R3  ; 
+  164 00000164 EBA2 0103       SUB              R1, R2, R3
+  165 00000168 4608            MOV              R0, R1      ;remainder of the a
+                                                            bove operation
+  166 0000016A E7D5            B                EIGHT
+  167 0000016C         
+  168 0000016C         TEN
+  169 0000016C 4B34            LDR              R3, =1000000000
+  170 0000016E 4602            MOV              R2, R0      ;R2 has the origina
+                                                            l value
+  171 00000170 FBB0 F1F3       UDIV             R1, R0, R3  ;this is n = n/100,
+                                                             R1 should contain 
+                                                            the most significan
+                                                            t bit
+  172 00000174 4608            MOV              R0, R1
+  173 00000176 F100 0030       ADD              R0, #0x30
+  174 0000017A B50E            PUSH             {R1, R2,R3, LR}
+  175 0000017C F7FF FFFE       BL               ST7735_OutChar
+  176 00000180 E8BD 400E       POP              {R1, R2, R3, LR}
+  177 00000184 FB01 F303       MUL              R3, R1, R3  ; 
+  178 00000188 EBA2 0103       SUB              R1, R2, R3
+  179 0000018C 4608            MOV              R0, R1      ;remainder of the a
+                                                            bove operation
+  180 0000018E E7D8            B                NINE
+  181 00000190         
+  182 00000190         
+  183 00000190 4770            BX               LR
+
+
+
+ARM Macro Assembler    Page 5 
+
+
+  184 00000192         
+  185 00000192         
+  186 00000192         
+  187 00000192         ;* * * * * * * * End of LCD_OutDec * * * * * * * *
+  188 00000192         
+  189 00000192         ; -----------------------LCD _OutFix--------------------
+                       --
+  190 00000192         ; Output characters to LCD display in fixed-point format
+                       
+  191 00000192         ; unsigned decimal, resolution 0.01, range 0.00 to 9.99
+  192 00000192         ; Inputs:  R0 is an unsigned 32-bit number
+  193 00000192         ; Outputs: none
+  194 00000192         ; E.g., R0=0,    then output "0.00 "
+  195 00000192         ;       R0=3,    then output "0.03 "
+  196 00000192         ;       R0=89,   then output "0.89 "
+  197 00000192         ;       R0=123,  then output "1.23 "
+  198 00000192         ;       R0=999,  then output "9.99 "
+  199 00000192         ;       R0>999,  then output "*.** "
+  200 00000192         ; Invariables: This function must not permanently modify
+                        registers R4 to R11
+  201 00000192         ; Lab 7 requirement is for at least one local variable o
+                       n the stack with symbolic bindinG
+  202 00000192         LCD_OutFix
+  203 00000192         
+  204 00000192 F240 31E7       MOV              R1, #999
+  205 00000196 4288            CMP              R0, R1
+  206 00000198 D836            BHI              HIGH
+  207 0000019A F04F 0164       MOV              R1, #100
+  208 0000019E FBB0 F2F1       UDIV             R2, R0, R1
+  209 000001A2 F102 0330       ADD              R3, R2, #0x30 
+                                                            ; CONVERTS TO ASCII
+                                                            
+  210 000001A6 4601            MOV              R1, R0      ; SAVE R0
+  211 000001A8 4618            MOV              R0, R3
+  212 000001AA B50E            PUSH             {R1,R2,R3, LR}
+  213 000001AC F7FF FFFE       BL               ST7735_OutChar
+  214 000001B0 E8BD 400E       POP{R1,          R2, R3, LR}
+  215 000001B4 F04F 002E       MOV              R0, #0x2E
+  216 000001B8 B50E            PUSH{R1,         R2, R3, LR}
+  217 000001BA F7FF FFFE       BL               ST7735_OutChar
+  218 000001BE E8BD 400E       POP{R1,          R2, R3, LR}
+  219 000001C2 4608            MOV              R0, R1      ; RESTORE R0
+  220 000001C4 F04F 0164       MOV              R1, #100
+  221 000001C8 FB02 F201       MUL              R2, R2, R1
+  222 000001CC EBA0 0002       SUB              R0, R0, R2
+  223 000001D0 F04F 010A       MOV              R1, #10
+  224 000001D4 FBB0 F2F1       UDIV             R2, R0, R1
+  225 000001D8 F102 0330       ADD              R3, R2, #0x30
+  226 000001DC 4601            MOV              R1, R0      ; SAVE R0
+  227 000001DE 4618            MOV              R0, R3
+  228 000001E0 B50E            PUSH{R1,         R2, R3, LR}
+  229 000001E2 F7FF FFFE       BL               ST7735_OutChar
+  230 000001E6 E8BD 400E       POP{R1,          R2, R3, LR}
+  231 000001EA         
+  232 000001EA 4608            MOV              R0, R1      ; RESTORE R0
+  233 000001EC F04F 010A       MOV              R1, #10
+  234 000001F0 FB02 F201       MUL              R2, R2, R1
+  235 000001F4 EBA0 0002       SUB              R0, R0, R2
+  236 000001F8 F100 0030       ADD              R0, R0, #0x30
+
+
+
+ARM Macro Assembler    Page 6 
+
+
+  237 000001FC B50E            PUSH{R1,         R2, R3, LR}
+  238 000001FE F7FF FFFE       BL               ST7735_OutChar
+  239 00000202 E8BD 400E       POP{R1,          R2, R3, LR}
+  240 00000206 4770            BX               LR
+  241 00000208         
+  242 00000208         HIGH
+  243 00000208 B501            PUSH{R0,         LR}
+  244 0000020A F04F 002A       MOV              R0, #0x2A
+  245 0000020E F7FF FFFE       BL               ST7735_OutChar
+  246 00000212 F04F 002E       MOV              R0, #0x2E
+  247 00000216 F7FF FFFE       BL               ST7735_OutChar
+  248 0000021A F04F 002A       MOV              R0, #0x2A
+  249 0000021E F7FF FFFE       BL               ST7735_OutChar
+  250 00000222 F04F 002A       MOV              R0, #0x2A
+  251 00000226 F7FF FFFE       BL               ST7735_OutChar
+  252 0000022A E8BD 4001       POP{R0,          LR}
+  253 0000022E 4770            BX               LR
+  254 00000230                 ALIGN
+  255 00000230         ;* * * * * * * * End of LCD_OutFix * * * * * * * *
+  256 00000230         
+  257 00000230                 ALIGN                        ; make sure the end
+                                                             of this section is
+                                                             aligned
+  258 00000230                 END                          ; end of file
+              000186A0 
+              000F4240 
+              00989680 
+              05F5E100 
+              3B9ACA00 
+Command Line: --debug --xref --diag_suppress=9931 --cpu=Cortex-M4 --apcs=interw
+ork --depend=.\print.d -o.\print.o -I.\RTE\_SpaceInvaders -IC:\Users\issac\AppD
+ata\Local\Arm\Packs\ARM\CMSIS\5.6.0\CMSIS\Core\Include -IC:\Users\issac\AppData
+\Local\Arm\Packs\Keil\TM4C_DFP\1.1.0\Device\Include\TM4C123 --predefine="__EVAL
+ SETA 1" --predefine="__UVISION_VERSION SETA 529" --predefine="_RTE_ SETA 1" --
+predefine="TM4C123GH6PM SETA 1" --list=.\print.lst Print.s
+
+
+
+ARM Macro Assembler    Page 1 Alphabetic symbol ordering
+Relocatable symbols
+
+.text 00000000
+
+Symbol: .text
+   Definitions
+      At line 17 in file Print.s
+   Uses
+      None
+Comment: .text unused
+BaseCase 00000000
+
+Symbol: BaseCase
+   Definitions
+      At line 29 in file Print.s
+   Uses
+      At line 51 in file Print.s
+Comment: BaseCase used once
+EIGHT 00000118
+
+Symbol: EIGHT
+   Definitions
+      At line 134 in file Print.s
+   Uses
+      At line 121 in file Print.s
+      At line 166 in file Print.s
+
+FIVE 00000098
+
+Symbol: FIVE
+   Definitions
+      At line 84 in file Print.s
+   Uses
+      At line 70 in file Print.s
+      At line 116 in file Print.s
+
+HIGH 00000208
+
+Symbol: HIGH
+   Definitions
+      At line 242 in file Print.s
+   Uses
+      At line 206 in file Print.s
+Comment: HIGH used once
+LCD_OutDec 00000000
+
+Symbol: LCD_OutDec
+   Definitions
+      At line 28 in file Print.s
+   Uses
+      At line 14 in file Print.s
+Comment: LCD_OutDec used once
+LCD_OutFix 00000192
+
+Symbol: LCD_OutFix
+   Definitions
+      At line 202 in file Print.s
+   Uses
+      At line 15 in file Print.s
+Comment: LCD_OutFix used once
+NINE 00000142
+
+
+
+ARM Macro Assembler    Page 2 Alphabetic symbol ordering
+Relocatable symbols
+
+
+Symbol: NINE
+   Definitions
+      At line 151 in file Print.s
+   Uses
+      At line 137 in file Print.s
+      At line 180 in file Print.s
+
+NonBaseCase 00000014
+
+Symbol: NonBaseCase
+   Definitions
+      At line 37 in file Print.s
+   Uses
+      At line 31 in file Print.s
+      At line 66 in file Print.s
+
+QUAD 0000006A
+
+Symbol: QUAD
+   Definitions
+      At line 67 in file Print.s
+   Uses
+      At line 54 in file Print.s
+      At line 99 in file Print.s
+
+SEVEN 000000EE
+
+Symbol: SEVEN
+   Definitions
+      At line 118 in file Print.s
+   Uses
+      At line 104 in file Print.s
+      At line 149 in file Print.s
+
+SIX 000000C4
+
+Symbol: SIX
+   Definitions
+      At line 101 in file Print.s
+   Uses
+      At line 87 in file Print.s
+      At line 133 in file Print.s
+
+TEN 0000016C
+
+Symbol: TEN
+   Definitions
+      At line 168 in file Print.s
+   Uses
+      At line 154 in file Print.s
+Comment: TEN used once
+TRIPLE 0000003E
+
+Symbol: TRIPLE
+   Definitions
+      At line 52 in file Print.s
+   Uses
+      At line 39 in file Print.s
+
+
+
+ARM Macro Assembler    Page 3 Alphabetic symbol ordering
+Relocatable symbols
+
+      At line 82 in file Print.s
+
+14 symbols
+
+
+
+ARM Macro Assembler    Page 1 Alphabetic symbol ordering
+External symbols
+
+ST7735_OutChar 00000000
+
+Symbol: ST7735_OutChar
+   Definitions
+      At line 12 in file Print.s
+   Uses
+      At line 34 in file Print.s
+      At line 46 in file Print.s
+      At line 61 in file Print.s
+      At line 77 in file Print.s
+      At line 94 in file Print.s
+      At line 111 in file Print.s
+      At line 128 in file Print.s
+      At line 144 in file Print.s
+      At line 161 in file Print.s
+      At line 175 in file Print.s
+      At line 213 in file Print.s
+      At line 217 in file Print.s
+      At line 229 in file Print.s
+      At line 238 in file Print.s
+      At line 245 in file Print.s
+      At line 247 in file Print.s
+      At line 249 in file Print.s
+      At line 251 in file Print.s
+
+ST7735_OutString 00000000
+
+Symbol: ST7735_OutString
+   Definitions
+      At line 13 in file Print.s
+   Uses
+      None
+Comment: ST7735_OutString unused
+2 symbols
+352 symbols in table
